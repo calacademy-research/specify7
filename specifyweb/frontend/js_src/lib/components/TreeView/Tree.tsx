@@ -198,10 +198,19 @@ export function Tree<
     return () => clearInterval(intervalId);
   }, []);
 
+  /*
+   * [contain:layout] isolates the tree grid's layout from the rest of the
+   * page. Without it, ANY layout invalidation elsewhere on the page (typing
+   * into a form dialog, a header text change, a focus ring) makes Chrome
+   * re-lay-out the entire grid, which costs tens of seconds once a few
+   * thousand nodes are expanded (11k rows x 17 ranks measured at 27-36s of
+   * Layout per keystroke). With containment the same change costs ~0ms.
+   */
   return (
     <div
       className={`
-        grid-table h-full flex-1 grid-cols-[repeat(var(--cols),auto)] 
+        grid-table h-full flex-1 grid-cols-[repeat(var(--cols),auto)]
+        [contain:layout]
         content-start overflow-auto rounded border border-2
         border-[var(--edge-color)] from-[var(--edge-color)] via-[var(--middle-color)] to-[var(--edge-color)]
         p-1 pt-0 outline-none
