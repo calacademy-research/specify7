@@ -3,6 +3,7 @@ Defines the resources that are provided by this subsystem
 """
 
 import json
+import logging
 import os
 import re
 from typing import List
@@ -342,6 +343,34 @@ def user(request):
     if settings.RO_MODE or not request.user.is_authenticated:
         data['usertype'] = "readonly"
     return HttpResponse(toJson(data), content_type='application/json')
+
+client_error_logger = logging.getLogger('specifyweb.client_error')
+
+@require_http_methods(['POST'])
+@skip_collection_access_check
+def client_error(request):
+    """Accept a client-side crash beacon and log it as one line so UI crashes can be
+    counted from server logs. Deliberately tolerant: anonymous callers are fine (crashes
+    happen before login too), oversized or malformed bodies are refused, nothing is stored."""
+    if len(request.body) > 8192:
+        return HttpResponse(status=413)
+    try:
+        data = json.loads(request.body)
+    except ValueError:
+        return HttpResponseBadRequest('expected a JSON object')
+    if not isinstance(data, dict):
+        return HttpResponseBadRequest('expected a JSON object')
+    def clip(key, n):
+        value = data.get(key, '')
+        return (value if isinstance(value, str) else str(value))[:n].replace('\n', ' | ')
+    collection = getattr(request, 'specify_collection', None)
+    client_error_logger.error(
+        "collection=%s user=%s url=%s message=%s stack=%s",
+        getattr(collection, 'collectionname', None),
+        getattr(getattr(request, 'user', None), 'username', None),
+        clip('url', 500), clip('message', 2000), clip('stack', 4000),
+    )
+    return HttpResponse(status=204)
 
 @login_maybe_required
 @require_http_methods(['GET', 'HEAD'])

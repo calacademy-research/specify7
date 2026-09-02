@@ -3,6 +3,7 @@ import React from 'react';
 import type { RA } from '../../utils/types';
 import { displayError } from '../Core/Contexts';
 import { breakpoint } from './assert';
+import { reportClientError } from './clientErrorBeacon';
 import { ErrorDialog } from './ErrorDialog';
 import { errorHandledBy, formatError, handleAjaxError } from './FormatError';
 
@@ -37,6 +38,7 @@ function showError(
     return;
   const [errorObject, errorMessage, copiableMessage] = formatError(error);
   console.error(errorMessage, ...args);
+  reportClientError(errorMessage, error?.stack ?? '');
   breakpoint();
   displayError(({ onClose: handleClose }) => (
     <ErrorDialog
