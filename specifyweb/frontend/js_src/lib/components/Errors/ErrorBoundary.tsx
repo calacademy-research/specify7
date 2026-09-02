@@ -9,6 +9,7 @@ import React from 'react';
 import type { State } from 'typesafe-reducer';
 
 import { errorDetails } from './assert';
+import { reportClientError } from './clientErrorBeacon';
 import { ErrorDialog } from './ErrorDialog';
 import { produceStackTrace } from './stackTrace';
 
@@ -54,6 +55,7 @@ export class ErrorBoundary extends React.Component<
     )
       globalThis.location.reload();
     console.error(error.toString());
+    reportClientError(error.toString(), errorInfo.componentStack);
     this.setState({
       type: 'Error',
       error,
